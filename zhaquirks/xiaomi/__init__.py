@@ -60,6 +60,7 @@ MOTION_TYPE = 0x000D
 OCCUPANCY_STATE = 0
 PATH = "path"
 POWER = "power"
+CURRENT = "current"
 CONSUMPTION = "consumption"
 VOLTAGE = "voltage"
 PRESSURE_MEASUREMENT = "pressure_measurement"
@@ -284,6 +285,7 @@ class XiaomiCluster(CustomCluster):
             5: XIAOMI_ATTR_5,
             6: XIAOMI_ATTR_6,
             10: PATH,
+            100: STATE,
         }
 
         if self.endpoint.device.model in [
@@ -291,6 +293,7 @@ class XiaomiCluster(CustomCluster):
             "lumi.sens",
             "lumi.weather",
             "lumi.airmonitor.acn01",
+            "lumi.sensor_ht.agl02",
         ]:
             # Temperature sensors send temperature/humidity/pressure updates trough this
             # cluster instead of the respective clusters
@@ -307,7 +310,9 @@ class XiaomiCluster(CustomCluster):
             "lumi.plug.maus01",
             "lumi.relay.c2acn01",
         ]:
-            attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
+            attribute_names.update(
+                {149: CONSUMPTION, 150: VOLTAGE, 151: CURRENT, 152: POWER}
+            )
         elif self.endpoint.device.model == "lumi.sensor_motion.aq2":
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
 
@@ -354,7 +359,18 @@ class BasicCluster(XiaomiCluster, Basic):
 class XiaomiAqaraE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
     """Xiaomi mfg cluster implementation."""
 
+    class AqaraMode(t.enum8):
+        """Mode for aqara devices."""
+
+        COMPATIBILITY_MODE = 0x01
+        ZIGBEE_MODE = 0x02
+        LUMI_MODE = 0x03
+
     cluster_id = 0xFCC0
+    manufacturer_attributes = {
+        0x0009: ("mode", t.uint8_t),
+        0x0112: ("illuminance", t.uint32_t),
+    }
 
 
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
